@@ -1,0 +1,42 @@
+# Instructions for Setting Up Your xAI API Key
+# ================================================
+
+# STEP 1: Get your API Key from xAI
+# ===================================
+# 1. Go to https://console.x.ai/
+# 2. Sign up or log in to your account
+# 3. Navigate to the API keys section
+# 4. Create a new API key
+# 5. Copy your API key (it will look like: xai_xxx...)
+
+# STEP 2: Set the API Key as an Environment Variable
+# ====================================================
+
+# Option A: Using Terminal (Temporary - only for current session)
+# ---------------------------------------------------------------
+# export XAI_API_KEY='your-api-key-here-replace-with-actual-key'
+# python main.py
+
+# Option B: Using .env file (Recommended - persistent)
+# -------------------------------------------------------
+# 1. Create a file named ".env" in this directory
+# 2. Add this line to the .env file:
+#    XAI_API_KEY=your-api-key-here-replace-with-actual-key
+# 3. Run: python main.py
+
+# Option C: Using .env.local file (For development)
+# --------------------------------------------------
+# Same as Option B, but use ".env.local" instead of ".env"
+# This file is already in .gitignore for security
+
+# STEP 3: Run the Program
+# =======================
+# python main.py
+
+# IMPORTANT SECURITY NOTES:
+# ==========================
+# - NEVER commit your API key to git or GitHub
+# - NEVER share your API key publicly
+# - The .gitignore file already protects .env files
+# - Always use environment variables for sensitive credentials
+# - If you accidentally expose your key, regenerate it immediately at console.x.ai

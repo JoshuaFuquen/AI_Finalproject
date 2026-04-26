@@ -1,0 +1,33 @@
+# Ignore environment files with sensitive credentials
+.env
+.env.local
+.env.*.local
+
+# Ignore Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Ignore virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# Ignore IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
+
+# Ignore API keys and credentials
+api_key.txt
+credentials.json
+secrets.json
