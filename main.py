@@ -1,123 +1,162 @@
-# Simple Text Classification Project - Positive/Negative Review Classifier
-# This project demonstrates a basic machine learning pipeline using scikit-learn
+# AI Text Classification using xAI Grok LLM
+# This project uses an LLM (Large Language Model) as the "brain" to classify reviews
+# The LLM analyzes sentiment based on training data patterns
 
-# Import necessary libraries
-from sklearn.model_selection import train_test_split
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score
+import os
+import json
+from typing import List, Dict
 
 # ============================================================================
-# STEP 1: Create and prepare the dataset
+# STEP 1: Setup and Configuration
 # ============================================================================
 
-# Sample dataset with short text reviews and their labels (0 = negative, 1 = positive)
-reviews = [
-    "This product is amazing! I love it so much.",  # positive
-    "Terrible quality, very disappointed.",  # negative
-    "Great value for the money, highly recommend.",  # positive
-    "Waste of money, does not work as described.",  # negative
-    "Excellent service and fast delivery!",  # positive
-    "Very poor, broke after one day.",  # negative
-    "Best purchase ever, could not be happier!",  # positive
-    "Not worth the price, very disappointed.",  # negative
-    "Fantastic quality, exceeded expectations.",  # positive
-    "Horrible experience, will not buy again.",  # negative
-    "Perfect! Exactly what I needed.",  # positive
-    "Bad quality, money wasted.",  # negative
-    "Love this product, works perfectly!",  # positive
-    "Completely useless, total waste.",  # negative
-    "Outstanding product, very satisfied.",  # positive
-    "Poor quality, very unhappy with purchase.",  # negative
-    "Wonderful! Would definitely recommend.",  # positive
-    "Awful product, complete disappointment.",  # negative
-    "Amazing quality and great customer service!",  # positive
-    "Not satisfied, looking for refund.",  # negative
+# Import the xAI API client
+try:
+    import requests
+except ImportError:
+    print("Error: 'requests' library not found. Install it with: pip install requests")
+    exit(1)
+
+# Load API key from environment variable
+API_KEY = os.getenv('XAI_API_KEY')
+
+if not API_KEY:
+    print("ERROR: XAI_API_KEY environment variable not set!")
+    print("Please set your API key: export XAI_API_KEY='your-api-key-here'")
+    exit(1)
+
+# xAI API configuration
+XAI_API_URL = "https://api.x.ai/v1/chat/completions"
+MODEL_NAME = "grok-beta"
+
+# ============================================================================
+# STEP 2: Training Dataset
+# ============================================================================
+
+# Training examples with labels (used to teach the LLM the classification task)
+training_data = [
+    {"text": "This product is amazing! I love it so much.", "sentiment": "positive"},
+    {"text": "Terrible quality, very disappointed.", "sentiment": "negative"},
+    {"text": "Great value for the money, highly recommend.", "sentiment": "positive"},
+    {"text": "Waste of money, does not work as described.", "sentiment": "negative"},
+    {"text": "Excellent service and fast delivery!", "sentiment": "positive"},
+    {"text": "Very poor, broke after one day.", "sentiment": "negative"},
+    {"text": "Best purchase ever, could not be happier!", "sentiment": "positive"},
+    {"text": "Not worth the price, very disappointed.", "sentiment": "negative"},
+    {"text": "Fantastic quality, exceeded expectations.", "sentiment": "positive"},
+    {"text": "Horrible experience, will not buy again.", "sentiment": "negative"},
+    {"text": "Perfect! Exactly what I needed.", "sentiment": "positive"},
+    {"text": "Bad quality, money wasted.", "sentiment": "negative"},
+    {"text": "Love this product, works perfectly!", "sentiment": "positive"},
+    {"text": "Completely useless, total waste.", "sentiment": "negative"},
+    {"text": "Outstanding product, very satisfied.", "sentiment": "positive"},
+    {"text": "Poor quality, very unhappy with purchase.", "sentiment": "negative"},
+    {"text": "Wonderful! Would definitely recommend.", "sentiment": "positive"},
+    {"text": "Awful product, complete disappointment.", "sentiment": "negative"},
+    {"text": "Amazing quality and great customer service!", "sentiment": "positive"},
+    {"text": "Not satisfied, looking for refund.", "sentiment": "negative"},
 ]
 
-# Labels: 0 = negative review, 1 = positive review
-labels = [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0]
-
-# Alternative labels format (string labels)
-labels = [
-    "positive", "positive", "positive", "positive", "positive",
-    "negative", "negative", "negative", "negative", "negative"
-]
-
-# ============================================================================
-# STEP 2: Split the data into training and testing sets
-# ============================================================================
-
-# 70% for training, 30% for testing
-X_train, X_test, y_train, y_test = train_test_split(
-    reviews, labels, test_size=0.3, random_state=42
-)
-X_train, X_test, y_train, y_test = train_test_split(
-    reviews, labels, test_size=0.3, random_state=42
-)
-X_train, X_test, y_train, y_test = train_test_split(
-    reviews, labels, test_size=0.3, random_state=42
-)
-
-print("Dataset split completed!")
-print(f"Training samples: {len(X_train)}")
-print(f"Testing samples: {len(X_test)}")
+print("=" * 70)
+print("AI TEXT CLASSIFICATION USING xAI GROK LLM")
+print("=" * 70)
+print(f"\nTraining dataset loaded: {len(training_data)} examples")
 print()
 
 # ============================================================================
-# STEP 3: Convert text to numerical features using TF-IDF
+# STEP 3: Create a prompt with training examples for the LLM
 # ============================================================================
 
-# TfidfVectorizer converts text into numerical values that the model can understand
-# It calculates the importance of each word in the documents
-vectorizer = TfidfVectorizer(lowercase=True, stop_words='english', max_features=100)
+def create_system_prompt() -> str:
+    """
+    Creates a system prompt that teaches the LLM how to classify sentiment
+    by providing examples from the training data
+    """
+    
+    # Build the training examples into the system prompt
+    examples_text = ""
+    for example in training_data:
+        examples_text += f'- "{example["text"]}" → {example["sentiment"]}\n'
+    
+    system_prompt = f"""You are an expert sentiment classifier. Your task is to classify 
+short text reviews as either "positive" or "negative".
 
-# Fit the vectorizer on training data and transform it
-X_train_vectors = vectorizer.fit_transform(X_train)
+TRAINING EXAMPLES:
+{examples_text}
 
-# Transform test data using the same vectorizer
-X_test_vectors = vectorizer.transform(X_test)
+CLASSIFICATION RULES:
+- Positive: The text expresses satisfaction, joy, recommendation, or approval
+- Negative: The text expresses dissatisfaction, disappointment, complaint, or disapproval
 
-print("Text converted to numerical features!")
-print()
-
-# ============================================================================
-# STEP 4: Train the Logistic Regression model
-# ============================================================================
-
-# Create and train the classification model
-model = LogisticRegression(random_state=42, max_iter=100)
-model.fit(X_train_vectors, y_train)
-model = LogisticRegression()
-model.fit(X_train_vectors, y_train)
-model = LogisticRegression()
-model.fit(X_train_vectors, y_train)
-
-print("Model training completed!")
-print()
-
-# ============================================================================
-# STEP 5: Evaluate the model on test data
-# ============================================================================
-
-# Calculate accuracy on the test set
-test_accuracy = model.score(X_test_vectors, y_test)
-
-# Alternative accuracy calculation
-predictions = model.predict(X_test_vectors)
-accuracy = accuracy_score(y_test, predictions)
-
-print("=" * 60)
-print(f"TEST ACCURACY: {test_accuracy * 100:.2f}%")
-print("=" * 60)
-print()
+IMPORTANT: 
+- Respond with ONLY the word "positive" or "negative"
+- Do not add explanations
+- Do not add punctuation
+- Just the classification label"""
+    
+    return system_prompt
 
 # ============================================================================
-# STEP 6: Make predictions on new example sentences
+# STEP 4: Function to call xAI Grok API
 # ============================================================================
 
-# Create 5 new example sentences to classify
-new_reviews = [
+def classify_with_llm(text: str, system_prompt: str) -> str:
+    """
+    Sends a request to xAI Grok API to classify the sentiment of the given text
+    
+    Args:
+        text: The review text to classify
+        system_prompt: The system prompt with training examples
+        
+    Returns:
+        The classification: "positive" or "negative"
+    """
+    
+    try:
+        headers = {
+            "Authorization": f"Bearer {API_KEY}",
+            "Content-Type": "application/json"
+        }
+        
+        payload = {
+            "model": MODEL_NAME,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": system_prompt
+                },
+                {
+                    "role": "user",
+                    "content": f"Classify this review: {text}"
+                }
+            ],
+            "temperature": 0,  # Temperature 0 for consistent predictions
+            "max_tokens": 10   # We only need one word response
+        }
+        
+        response = requests.post(XAI_API_URL, headers=headers, json=payload)
+        
+        if response.status_code != 200:
+            print(f"API Error: {response.status_code}")
+            print(f"Response: {response.text}")
+            return "error"
+        
+        # Extract the classification from the response
+        result = response.json()
+        classification = result["choices"][0]["message"]["content"].strip().lower()
+        
+        return classification
+        
+    except Exception as e:
+        print(f"Error calling API: {e}")
+        return "error"
+
+# ============================================================================
+# STEP 5: Prepare new test reviews
+# ============================================================================
+
+# 5 new example reviews to classify
+test_reviews = [
     "This is the best thing I ever bought!",
     "Complete garbage, do not buy.",
     "Pretty good product for the price.",
@@ -125,25 +164,47 @@ new_reviews = [
     "I am very happy with this product!"
 ]
 
-print("Making predictions on new examples:")
-print("-" * 60)
+print("-" * 70)
+print("CLASSIFYING NEW REVIEWS WITH xAI GROK LLM")
+print("-" * 70)
+print()
 
-# Convert new reviews to numerical features
-vectorizer = TfidfVectorizer()
-new_vectors = vectorizer.transform(new_reviews)
-new_predictions = model.predict(new_vectors)
+# ============================================================================
+# STEP 6: Classify new reviews using the LLM
+# ============================================================================
 
-# Get predictions (0 = negative, 1 = positive)
-predictions = model.predict(new_vectors)
-model = LogisticRegression()
+# Create the system prompt with training data
+system_prompt = create_system_prompt()
 
-# Print each review with its predicted label
-for i, review in enumerate(new_reviews):
-    prediction = predictions[i]
-    sentiment = "POSITIVE" if prediction == 1 else "NEGATIVE"
-    print(f"\nReview: \"{review}\"")
+# Classify each test review
+predictions = []
+
+for i, review in enumerate(test_reviews, 1):
+    print(f"Review {i}: \"{review}\"")
+    
+    # Get classification from LLM
+    prediction = classify_with_llm(review, system_prompt)
+    predictions.append(prediction)
+    
+    # Display result
+    if prediction == "positive":
+        sentiment = "✓ POSITIVE"
+    elif prediction == "negative":
+        sentiment = "✗ NEGATIVE"
+    else:
+        sentiment = "ERROR"
+    
     print(f"Predicted Sentiment: {sentiment}")
+    print()
 
-print("\n" + "=" * 60)
-print("Classification complete!")
-print("=" * 60)
+# ============================================================================
+# STEP 7: Summary
+# ============================================================================
+
+print("=" * 70)
+print("CLASSIFICATION COMPLETE")
+print("=" * 70)
+print(f"\nTotal reviews classified: {len(test_reviews)}")
+print(f"Results: {predictions}")
+print("\nThe LLM analyzed the reviews using the training patterns learned from")
+print("the training data and classified each review as positive or negative.")
