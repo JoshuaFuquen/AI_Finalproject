@@ -32,7 +32,7 @@ AI_Finalproject/
 ├── requirements.txt          # Dependencies for LLM approach
 ├── API_KEY_SETUP.txt         # Instructions for xAI API setup
 ├── .gitignore               # Git ignore file (protects credentials)
-├── AI_final_Excel.xlsx      # 📊 Excel spreadsheet for analysis
+├── AI_final_Excel.xlsx      # 📊 Excel using the template given
 ├── AI_Report_finalproject.pdf # 📄 Final project report
 └── README.md                # This file
 ```
